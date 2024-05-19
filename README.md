@@ -2,7 +2,8 @@
 ## ！！！Update ！！！  
 Problem Solved in
 https://github.com/csdjk/lcl-obsidian-html-local-img-plugin/
-
+- support live preview
+- support html img
 
 
 
