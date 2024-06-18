@@ -1,7 +1,7 @@
 {
 	"id": "obsidian-local-img-plugin",
 	"name": "Local Img Plugin",
-	"version": "1.0.1",
+	"version": "1.0.2",
 	"minAppVersion": "0.12.0",
 	"description": "local img html can show",
 	"author": "Obsidian",

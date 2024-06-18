@@ -1,40 +1,122 @@
-import {Platform, Plugin, TFile} from "obsidian";
-import type { MarkdownView } from 'obsidian';
-import {platform} from "os";
+import { App, Editor, EventRef, MarkdownPostProcessorContext, MarkdownView, Modal, Notice, Platform, Plugin, PluginSettingTab, Setting, TFile } from 'obsidian';
+import {
+	EditorView,
+	PluginValue,
+	ViewPlugin,
+	ViewUpdate,
+	DecorationSet,
+	Decoration,
+} from "@codemirror/view";
 
-console.log("Running on sample img")
-export default class HtmlLocalSrcPlugin extends Plugin {
-  async onload() {
-	console.log("Running on ---------------onload")
-    this.registerMarkdownPostProcessor((element, ctx) => {
-		console.log("Running on ===1")
-		const active_file = this.app.workspace.getActiveFile(); //工作区打开的文件名
-		console.log(active_file.basename);
-      const targetLinks = Array.from(element.getElementsByTagName("img")).filter(
-        (link) =>
-          link.src.contains(active_file.basename) || link.src.contains("png") || link.src.contains("jpg")
-      );  //获取obsidian面板里（整个软件显示部分）里包含img标签的样式。
-      //增加png和jpg条件，把所有的图片都选出来。
-	  
-      let active_path = this.app.vault.getResourcePath(active_file)
-      active_path = active_path.substring(0, active_path.lastIndexOf("/"));
-      console.log('active_file_path: ' + active_path)
-	  console.log('arg'+targetLinks) //在这里中文路径就获取不到了。无法获取[object HTMLImageElement]
-      for (const link of targetLinks) {
-        //将所有图片链接里的app://obsidian.md/去掉。
-        let clean_link = link.src.replace('app://obsidian.md/', '')
-        // For iOS
-        clean_link = clean_link.replace('capacitor://localhost/', '')
-        console.log('clean_link: ' + clean_link)
-        let full_link =  active_path + '/' + clean_link
-        console.log('full_link: ' + full_link)
-        link.src = full_link
-        if(Platform.isMobile) {
-          console.log("Running on mobile platform - setting object fit and height of img")
-          link.style.objectFit = "contain"
-          link.height = 100
-        }
-        }
-    });
-  }
+interface PluginSettings {
+	mySetting: string;
+}
+
+const DEFAULT_SETTINGS: PluginSettings = {
+	mySetting: 'default'
+}
+
+
+class VerticalLinesPluginValue implements PluginValue {
+	constructor(
+		private path: string,
+		private view: EditorView,
+		private callback: Function,
+
+	) {
+		// console.log(this.view);
+	}
+
+	update(update: ViewUpdate) {
+		// console.log("update", update);
+		this.callback(this.view.dom, this.path);
+
+		// if (
+		// 	update.docChanged ||
+		// 	update.viewportChanged ||
+		// 	update.geometryChanged ||
+		// 	update.transactions.some((tr) => tr.reconfigured)
+		// ) {
+		// 	this.scheduleRecalculate();
+		// }
+	}
+}
+
+export default class HtmlLocalImgPlugin extends Plugin {
+	settings: PluginSettings;
+
+	async onload() {
+		await this.loadSettings();
+		console.log("Running on ---------------onload")
+
+
+		this.registerMarkdownPostProcessor((element, ctx) => {
+			this.processElement(element, ctx.sourcePath);
+		})
+
+
+
+		let activeFile = this.app.workspace.getActiveFile();
+		if (activeFile) {
+			this.registerEditorExtension(
+				ViewPlugin.define(
+					(view) =>
+						new VerticalLinesPluginValue(
+							activeFile?.path,
+							view,
+							this.processElement.bind(this)
+						)),
+			);
+		}
+	}
+
+	processElement(element: HTMLElement, sourcePath: string) {
+		let targetLinks = Array.from(element.getElementsByTagName("img"));
+		// console.log('targetLinks: ', targetLinks)
+
+		if (this.app?.metadataCache == null) {
+			return;
+		}
+		for (const link of targetLinks) {
+			// console.log('link.src: ', link.src);
+			if (link.src == "" || link.src.includes("https://")) {
+				continue;
+			}
+			let clean_link = link.src.replace('app://obsidian.md/', '')
+      // For iOS
+			clean_link = clean_link.replace('capacitor://localhost/', '')
+			// console.log('clean_link: ' + clean_link)
+
+			let imageFile = this.app.metadataCache.getFirstLinkpathDest(clean_link, sourcePath);
+			if (imageFile == null) {
+				// console.log('null clean_link: ' + clean_link)
+				// console.log('imageFile is null')
+				continue;
+			}
+
+			let active_path = this.app.vault.getResourcePath(imageFile)
+			//console.log('active_path: ' + active_path)
+	
+			let full_link = active_path + '/' + clean_link
+			//console.log('full_link: ' + full_link)
+
+			link.src = full_link
+			if (Platform.isMobile) {
+				console.log("Running on mobile platform - setting object fit and height of img")
+				link.style.objectFit = "contain"
+				link.height = 100
+			}
+		}
+	}
+	onunload() {
+
+	}
+
+	async loadSettings() {
+		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+	}
+
+	async saveSettings() {
+		await this.saveData(this.settings);
+	}
 }
