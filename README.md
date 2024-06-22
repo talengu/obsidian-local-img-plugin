@@ -1,3 +1,13 @@
+## update
+
+| Platfrom | File                                                                                                    | LivePreview |
+| -------- | ------------------------------------------------------------------------------------------------------- | ----------- |
+| Windows  | [main.js](https://github.com/talengu/obsidian-local-img-plugin/blob/master/main.js)                     | ✅           |
+| Mac      | [main.js](https://github.com/talengu/obsidian-local-img-plugin/blob/master/main.js)                     | ✅           |
+| iPhone   | [commit main.js](https://github.com/talengu/obsidian-local-img-plugin/issues/6#issuecomment-2176835001) | ❌           |
+
+
+
 
 ## ！！！Update ！！！  
 Problem Solved in
